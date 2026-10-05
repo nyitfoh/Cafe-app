@@ -73,6 +73,11 @@
       background: #555;
     }
 
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
     #bill {
       margin-top: 25px;
       padding-top: 15px;
@@ -91,8 +96,13 @@
       margin-top: 15px;
     }
 
-    .empty {
+    .message {
       color: #666;
+      text-align: center;
+    }
+
+    .error {
+      color: #b00020;
       text-align: center;
     }
   </style>
@@ -103,44 +113,93 @@
   <div class="container">
     <h1>☕ Café Bill Calculator</h1>
 
-    <div id="menu"></div>
+    <div id="menu">
+      <p class="message">Loading menu...</p>
+    </div>
 
-    <button onclick="calculateBill()">Calculate Bill</button>
+    <button id="calculateButton" onclick="calculateBill()" disabled>
+      Calculate Bill
+    </button>
 
     <div id="bill"></div>
   </div>
 
   <script>
-    const items = [
-      { name: "Chicken Rice", price: 4.50 },
-      { name: "Nasi Lemak", price: 4.00 },
-      { name: "Laksa", price: 5.00 },
-      { name: "Kopi", price: 1.50 },
-      { name: "Teh", price: 1.30 },
-      { name: "Milo", price: 2.00 }
-    ];
+    let items = [];
 
-    const menu = document.getElementById("menu");
+    async function loadMenu() {
+      const menu = document.getElementById("menu");
+      const calculateButton = document.getElementById("calculateButton");
 
-    items.forEach((item, index) => {
-      menu.innerHTML += `
-        <div class="item">
-          <div class="item-info">
-            <div class="item-name">${item.name}</div>
-            <div class="price">$${item.price.toFixed(2)}</div>
+      try {
+        const response = await fetch("menu.csv");
+
+        if (!response.ok) {
+          throw new Error("Unable to load menu.csv");
+        }
+
+        const csvText = await response.text();
+        const lines = csvText.trim().split(/\r?\n/);
+
+        // Skip the header row.
+        items = lines
+          .slice(1)
+          .map(line => {
+            const [name, price] = line.split(",");
+
+            return {
+              name: name.trim(),
+              price: parseFloat(price.trim())
+            };
+          })
+          .filter(item =>
+            item.name &&
+            !Number.isNaN(item.price)
+          );
+
+        if (items.length === 0) {
+          throw new Error("No valid menu items found.");
+        }
+
+        displayMenu();
+        calculateButton.disabled = false;
+
+      } catch (error) {
+        menu.innerHTML = `
+          <p class="error">
+            Unable to load the café menu.
+          </p>
+        `;
+
+        console.error(error);
+      }
+    }
+
+    function displayMenu() {
+      const menu = document.getElementById("menu");
+
+      menu.innerHTML = "";
+
+      items.forEach((item, index) => {
+        menu.innerHTML += `
+          <div class="item">
+            <div class="item-info">
+              <div class="item-name">${escapeHTML(item.name)}</div>
+              <div class="price">$${item.price.toFixed(2)}</div>
+            </div>
+
+            <input
+              type="number"
+              id="qty-${index}"
+              min="0"
+              step="1"
+              value="0"
+              aria-label="Quantity for ${escapeHTML(item.name)}"
+            >
           </div>
-
-          <input
-            type="number"
-            id="qty-${index}"
-            min="0"
-            step="1"
-            value="0"
-            aria-label="Quantity for ${item.name}"
-          >
-        </div>
-      `;
-    });
+        `;
+      });
+    }
 
     function calculateBill() {
       let total = 0;
@@ -151,7 +210,6 @@
         const input = document.getElementById(`qty-${index}`);
         const quantity = Math.max(0, parseInt(input.value) || 0);
 
-        // Keep the displayed quantity valid.
         input.value = quantity;
 
         if (quantity > 0) {
@@ -162,7 +220,7 @@
 
           billHTML += `
             <div class="bill-row">
-              <span>${item.name} × ${quantity}</span>
+              <span>${escapeHTML(item.name)} × ${quantity}</span>
               <span>$${subtotal.toFixed(2)}</span>
             </div>
           `;
@@ -171,7 +229,7 @@
 
       if (!hasItems) {
         document.getElementById("bill").innerHTML =
-          '<p class="empty">Please select at least one item.</p>';
+          '<p class="message">Please select at least one item.</p>';
         return;
       }
 
@@ -184,6 +242,14 @@
 
       document.getElementById("bill").innerHTML = billHTML;
     }
+
+    function escapeHTML(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    loadMenu();
   </script>
 
 </body>
