@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Café Bill Calculator</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .item-info {
+      flex: 1;
+    }
+
+    .item-name {
+      font-weight: bold;
+    }
+
+    .price {
+      color: #666;
+      font-size: 14px;
+    }
+
+    input[type="number"] {
+      width: 60px;
+      padding: 7px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 25px;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #555;
+    }
+
+    #bill {
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 2px solid #333;
+    }
+
+    .bill-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+    }
+
+    .total {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    .empty {
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>☕ Café Bill Calculator</h1>
+
+    <div id="menu"></div>
+
+    <button onclick="calculateBill()">Calculate Bill</button>
+
+    <div id="bill"></div>
+  </div>
+
+  <script>
+    const items = [
+      { name: "Chicken Rice", price: 4.50 },
+      { name: "Nasi Lemak", price: 4.00 },
+      { name: "Laksa", price: 5.00 },
+      { name: "Kopi", price: 1.50 },
+      { name: "Teh", price: 1.30 },
+      { name: "Milo", price: 2.00 }
+    ];
+
+    const menu = document.getElementById("menu");
+
+    items.forEach((item, index) => {
+      menu.innerHTML += `
+        <div class="item">
+          <div class="item-info">
+            <div class="item-name">${item.name}</div>
+            <div class="price">$${item.price.toFixed(2)}</div>
+          </div>
+
+          <input
+            type="number"
+            id="qty-${index}"
+            min="0"
+            step="1"
+            value="0"
+            aria-label="Quantity for ${item.name}"
+          >
+        </div>
+      `;
+    });
+
+    function calculateBill() {
+      let total = 0;
+      let billHTML = "<h2>Bill</h2>";
+      let hasItems = false;
+
+      items.forEach((item, index) => {
+        const input = document.getElementById(`qty-${index}`);
+        const quantity = Math.max(0, parseInt(input.value) || 0);
+
+        // Keep the displayed quantity valid.
+        input.value = quantity;
+
+        if (quantity > 0) {
+          hasItems = true;
+
+          const subtotal = item.price * quantity;
+          total += subtotal;
+
+          billHTML += `
+            <div class="bill-row">
+              <span>${item.name} × ${quantity}</span>
+              <span>$${subtotal.toFixed(2)}</span>
+            </div>
+          `;
+        }
+      });
+
+      if (!hasItems) {
+        document.getElementById("bill").innerHTML =
+          '<p class="empty">Please select at least one item.</p>';
+        return;
+      }
+
+      billHTML += `
+        <div class="bill-row total">
+          <span>Total</span>
+          <span>$${total.toFixed(2)}</span>
+        </div>
+      `;
+
+      document.getElementById("bill").innerHTML = billHTML;
+    }
+  </script>
+
+</body>
+</html>
